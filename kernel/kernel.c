@@ -24,6 +24,8 @@
 #include "vga.h"
 #include "keyboard.h"
 #include "../include/types.h"
+#include "process.h"
+#include "scheduler.h"
 
 /* ---------------------------------------------------------------------------
  * Forward declarations of shell commands
@@ -183,14 +185,23 @@ static void shell_run(void) {
         if (k_strcmp(cmd, "about") == 0) { cmd_about(); continue; }
         if (k_strcmp(cmd, "mem")   == 0) { cmd_mem();   continue; }
 
+        if (k_strcmp(cmd, "ps") == 0) {
+            process_list();
+            continue;
+        }
+          
+        if (k_strcmp(cmd, "run") == 0) {
+        scheduler_start();
+        continue;
+        }
+
         if (k_strncmp(cmd, "echo ", 5) == 0) {
             cmd_echo(k_ltrim(cmd + 5));
             continue;
         }
 
         /* Milestone stubs */
-        if (k_strcmp(cmd, "ps")      == 0 ||
-            k_strcmp(cmd, "kill")    == 0 ||
+        if (k_strcmp(cmd, "kill")    == 0 ||
             k_strcmp(cmd, "threads") == 0 ||
             k_strcmp(cmd, "free")    == 0 ||
             k_strcmp(cmd, "ls")      == 0 ||
@@ -210,9 +221,33 @@ static void shell_run(void) {
 /* ---------------------------------------------------------------------------
  * Kernel entry point – called from kernel_entry.asm
  * --------------------------------------------------------------------------*/
+static void test_process_1(void)
+{
+    while (true) {
+        vga_puts("Process 1 running\n");
+        process_yield();
+    }
+}
+
+static void test_process_2(void)
+{
+    while (true) {
+        vga_puts("Process 2 running\n");
+        process_yield();
+    }
+}
+
+
 void kernel_main(void) {
     vga_init();
     kb_init();
+
+    process_init();
+    scheduler_init();
+    
+    process_create(test_process_1);
+    process_create(test_process_2); 
+
     print_splash();
     shell_run();
 
