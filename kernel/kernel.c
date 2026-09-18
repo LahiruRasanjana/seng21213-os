@@ -26,6 +26,9 @@
 #include "../include/types.h"
 #include "process.h"
 #include "scheduler.h"
+#include "thread.h"
+#include "mutex.h" 
+#include "semaphore.h"
 
 /* ---------------------------------------------------------------------------
  * Forward declarations of shell commands
@@ -189,9 +192,19 @@ static void shell_run(void) {
             process_list();
             continue;
         }
+        
+        if (k_strcmp(cmd, "threads") == 0) {
+        thread_list();
+        continue;
+        }        
           
         if (k_strcmp(cmd, "run") == 0) {
         scheduler_start();
+        continue;
+        }
+
+        if (k_strcmp(cmd, "runthreads") == 0) {
+        thread_start();
         continue;
         }
 
@@ -202,7 +215,6 @@ static void shell_run(void) {
 
         /* Milestone stubs */
         if (k_strcmp(cmd, "kill")    == 0 ||
-            k_strcmp(cmd, "threads") == 0 ||
             k_strcmp(cmd, "free")    == 0 ||
             k_strcmp(cmd, "ls")      == 0 ||
             k_strcmp(cmd, "cat")     == 0) {
@@ -237,6 +249,34 @@ static void test_process_2(void)
     }
 }
 
+static mutex_t test_mutex;
+static semaphore_t test_semaphore;
+
+static void test_thread_1(void)
+{
+    while (true) {
+        semaphore_wait(&test_semaphore);
+
+        vga_puts("Thread 1 acquired semaphore\n");
+
+        semaphore_signal(&test_semaphore);
+
+        thread_yield();
+    }
+}
+
+static void test_thread_2(void)
+{
+    while (true) {
+        semaphore_wait(&test_semaphore);
+
+        vga_puts("Thread 2 acquired semaphore\n");
+
+        semaphore_signal(&test_semaphore);
+
+        thread_yield();
+    }
+}
 
 void kernel_main(void) {
     vga_init();
@@ -248,9 +288,17 @@ void kernel_main(void) {
     process_create(test_process_1);
     process_create(test_process_2); 
 
+    thread_init();
+    mutex_init(&test_mutex);
+    semaphore_init(&test_semaphore, 1);
+    
+    thread_create(test_thread_1);
+    thread_create(test_thread_2);
+
     print_splash();
     shell_run();
 
     /* Should never reach here */
     __asm__ __volatile__("hlt");
 }
+
