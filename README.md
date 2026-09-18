@@ -1,4 +1,4 @@
-# SENG21213-OS — Stage 0: Kernel Foundations
+# SENG21213-OS — Complete Operating System Project
 
 > **Course**: SENG 21213 – Computer Architecture & Operating Systems  
 > **Year**: 2nd Year, Software Engineering  
@@ -8,26 +8,35 @@
 
 ## What Is This?
 
-This is **Stage 0** of your semester-long OS assignment. Over 5 lecture milestones
-(Lectures 8–12), your team will transform this minimal kernel into a functioning
-operating system with process management, threading, memory management, and a
-file system.
+This project is the completed SENG 21213 Operating Systems assignment developed
+across five lecture milestones (Lectures 8–12). The system boots on bare-metal
+x86 architecture and includes process management, threads and synchronisation,
+memory management, a RAM-disk file system, and an interactive kernel shell.
 
 ```
 seng21213-os/
 ├── boot/
-│   └── boot.asm          ← MBR Bootloader (NASM, 16-bit → 32-bit transition)
+│   ├── boot.asm
+│   └── switch.asm
 ├── kernel/
-│   ├── kernel_entry.asm  ← Protected-mode entry, calls kernel_main()
-│   ├── kernel.c          ← Main kernel: shell loop, command dispatch
-│   ├── vga.c / vga.h     ← VGA 80×25 text-mode driver
-│   ├── keyboard.c / .h   ← PS/2 keyboard polling driver
+│   ├── kernel_entry.asm
+│   ├── kernel.c
+│   ├── vga.c / vga.h
+│   ├── keyboard.c / keyboard.h
+│   ├── process.c / process.h
+│   ├── scheduler.c / scheduler.h
+│   ├── thread.c / thread.h
+│   ├── mutex.c / mutex.h
+│   ├── semaphore.c / semaphore.h
+│   ├── pmm.c / pmm.h
+│   ├── vmm.c / vmm.h
+│   ├── ramdisk.c / ramdisk.h
+│   └── fs.c / fs.h
 ├── include/
-│   └── types.h           ← Primitive types (no libc!)
-├── linker.ld             ← Linker script (kernel at 0x10000)
-├── Makefile              ← Build system
-├── Dockerfile            ← Reproducible build environment
-└── README.md             ← You are here
+│   └── types.h
+├── linker.ld
+├── Makefile
+└── README.md
 ```
 
 ---
@@ -36,11 +45,11 @@ seng21213-os/
 
 | Lecture | Milestone | Files to Add |
 |---------|-----------|-------------|
-| L08 | ✅ Stage 0 – Boot + VGA + Shell | *Given to you* |
-| L09 | Process Management | `kernel/process.c`, `kernel/scheduler.c` |
-| L10 | Threads & Synchronisation | `kernel/thread.c`, `kernel/mutex.c` |
-| L11 | Memory Management | `kernel/pmm.c`, `kernel/vmm.c` |
-| L12 | File System | `kernel/fs.c`, `kernel/ramdisk.c` |
+| L08 | ✅ Stage 0 – Boot + VGA + Shell | Bootloader, VGA, keyboard, shell |
+| L09 | ✅ Stage 1 – Process Management | `kernel/process.c`, `kernel/scheduler.c` |
+| L10 | ✅ Stage 2 – Threads & Synchronisation | `kernel/thread.c`, `kernel/mutex.c`, `kernel/semaphore.c` |
+| L11 | ✅ Stage 3 – Memory Management | `kernel/pmm.c`, `kernel/vmm.c` |
+| L12 | ✅ Stage 4 – File System | `kernel/fs.c`, `kernel/ramdisk.c` |
 
 ---
 
