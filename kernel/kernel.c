@@ -31,6 +31,8 @@
 #include "semaphore.h"
 #include "pmm.h"
 #include "vmm.h"
+#include "fs.h"
+#include "ramdisk.h"
 
 /* ---------------------------------------------------------------------------
  * Forward declarations of shell commands
@@ -221,6 +223,81 @@ static void cmd_vmmtest(void)
     vga_puts("\n");
 }
 
+static void cmd_fstest(void)
+{
+    char buffer[RAMDISK_BLOCK_SIZE];
+
+    vga_puts("\n  File System Test\n");
+    vga_puts("  ----------------\n");
+
+    if (fs_create("hello.txt") == 0) {
+        vga_puts("  Create file : PASS\n");
+    } else {
+        vga_puts("  Create file : FAIL\n");
+    }
+
+    if (fs_write("hello.txt", "Hello from SENG21213 OS!") == 0) {
+        vga_puts("  Write file  : PASS\n");
+    } else {
+        vga_puts("  Write file  : FAIL\n");
+    }
+
+    if (fs_read("hello.txt", buffer) == 0) {
+        vga_puts("  Read file   : PASS\n");
+        vga_puts("  Content     : ");
+        vga_puts(buffer);
+        vga_puts("\n");
+    } else {
+        vga_puts("  Read file   : FAIL\n");
+    }
+
+    fs_list();
+
+    vga_puts("\n");
+}
+
+static void cmd_ls(void)
+{
+    fs_list();
+}
+
+static void cmd_cat(const char *filename)
+{
+    char buffer[RAMDISK_BLOCK_SIZE];
+
+    if (filename == NULL || k_strlen(filename) == 0) {
+        vga_puts("  Usage: cat <filename>\n");
+        return;
+    }
+
+    if (fs_read(filename, buffer) == 0) {
+        vga_puts("  ");
+        vga_puts(buffer);
+        vga_puts("\n");
+    } else {
+        vga_puts("  File not found: ");
+        vga_puts(filename);
+        vga_puts("\n");
+    }
+}
+
+static void cmd_rm(const char *filename)
+{
+    if (filename == NULL || k_strlen(filename) == 0) {
+        vga_puts("  Usage: rm <filename>\n");
+        return;
+    }
+
+    if (fs_delete(filename) == 0) {
+        vga_puts("  File deleted: ");
+        vga_puts(filename);
+        vga_puts("\n");
+    } else {
+        vga_puts("  File not found: ");
+        vga_puts(filename);
+        vga_puts("\n");
+    }
+}
 
 /* ---------------------------------------------------------------------------
  * Shell process
@@ -259,6 +336,36 @@ static void shell_run(void) {
         continue;
         }
 
+        if (k_strcmp(cmd, "fstest") == 0) {
+        cmd_fstest();
+        continue;
+        }
+
+        if (k_strcmp(cmd, "ls") == 0) {
+        cmd_ls();
+        continue;
+        }
+
+        if (k_strncmp(cmd, "cat ", 4) == 0) {
+        cmd_cat(k_ltrim(cmd + 4));
+        continue;
+        }
+
+        if (k_strcmp(cmd, "cat") == 0) {
+        cmd_cat("");
+        continue;
+        }
+
+        if (k_strncmp(cmd, "rm ", 3) == 0) {
+        cmd_rm(k_ltrim(cmd + 3));
+        continue;
+        }
+
+        if (k_strcmp(cmd, "rm") == 0) {
+        cmd_rm("");
+        continue;
+        }
+
         if (k_strcmp(cmd, "ps") == 0) {
             process_list();
             continue;
@@ -285,10 +392,8 @@ static void shell_run(void) {
         }
 
         /* Milestone stubs */
-        if (k_strcmp(cmd, "kill")    == 0 ||
-            k_strcmp(cmd, "free")    == 0 ||
-            k_strcmp(cmd, "ls")      == 0 ||
-            k_strcmp(cmd, "cat")     == 0) {
+        if (k_strcmp(cmd, "kill") == 0 ||
+            k_strcmp(cmd, "free") == 0) {
             vga_puts_color("  [TODO] This command is not yet implemented.\n",
                            VGA_YELLOW, VGA_BLACK);
             vga_puts("  Implement it as part of your lecture assignment.\n");
@@ -364,7 +469,9 @@ void kernel_main(void) {
     semaphore_init(&test_semaphore, 1);
     
     pmm_init();
-    vmm_init();    
+    vmm_init(); 
+    ramdisk_init();
+    fs_init(); 
 
     thread_create(test_thread_1);
     thread_create(test_thread_2);
