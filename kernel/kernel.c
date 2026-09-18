@@ -29,6 +29,8 @@
 #include "thread.h"
 #include "mutex.h" 
 #include "semaphore.h"
+#include "pmm.h"
+#include "vmm.h"
 
 /* ---------------------------------------------------------------------------
  * Forward declarations of shell commands
@@ -151,18 +153,74 @@ static void cmd_echo(const char *args) {
     vga_puts("\n");
 }
 
-static void cmd_mem(void) {
-    /* Stage 0 stub – students implement the real PMM in Lecture 11 */
-    vga_puts_color("\n  Memory Map (stub – implement PMM in Lecture 11)\n",
-                   VGA_LIGHT_CYAN, VGA_BLACK);
-    vga_puts("  ─────────────────────────────────────────────\n");
-    vga_puts("  0x00000000 – 0x000FFFFF  :  First 1 MB (reserved/BIOS)\n");
-    vga_puts("  0x00100000 – 0x00EFFFFF  :  Extended memory (usable ~14 MB)\n");
-    vga_puts("  0x00F00000 – 0x00FFFFFF  :  BIOS / ROM area\n");
-    vga_puts("  0xB8000    – 0xBFFFF     :  VGA frame buffer\n");
-    vga_puts_color("\n  TODO: Use BIOS int 0x15, EAX=0xE820 to get real memory map\n\n",
-                   VGA_YELLOW, VGA_BLACK);
+static void cmd_mem(void)
+{
+    vga_puts("\n  Physical Memory Manager\n");
+    vga_puts("  -----------------------\n");
+
+    vga_printf("  Used pages : %d\n", pmm_get_used_pages());
+    vga_printf("  Free pages : %d\n", pmm_get_free_pages());
+    vga_printf("  Page size  : %d bytes\n", PAGE_SIZE);
+
+    vga_puts("\n");
 }
+
+static void cmd_memtest(void)
+{
+    void *page1;
+    void *page2;
+
+    vga_puts("\n  PMM Allocation Test\n");
+    vga_puts("  -------------------\n");
+
+    vga_printf("  Free before : %d\n", pmm_get_free_pages());
+
+    page1 = pmm_alloc_page();
+    page2 = pmm_alloc_page();
+
+    vga_printf("  Page 1 addr : 0x%x\n", (uint32_t)page1);
+    vga_printf("  Page 2 addr : 0x%x\n", (uint32_t)page2);
+
+    vga_printf("  Free after allocation : %d\n",
+               pmm_get_free_pages());
+
+    pmm_free_page(page1);
+    pmm_free_page(page2);
+
+    vga_printf("  Free after free : %d\n",
+               pmm_get_free_pages());
+
+    vga_puts("\n");
+}
+
+static void cmd_vmmtest(void)
+{
+    uint32_t physical;
+    uint32_t mapped;
+
+    vga_puts("\n  VMM Mapping Test\n");
+    vga_puts("  ----------------\n");
+
+    physical = (uint32_t)pmm_alloc_page();
+
+    vmm_map_page(0x00200000, physical);
+    mapped = vmm_get_mapping(0x00200000);
+
+    vga_printf("  Physical page : 0x%x\n", physical);
+    vga_printf("  Virtual addr  : 0x%x\n", 0x00200000);
+    vga_printf("  Mapping       : 0x%x\n", mapped);
+
+    if (mapped == physical) {
+        vga_puts("  Result        : PASS\n");
+    } else {
+        vga_puts("  Result        : FAIL\n");
+    }
+
+    pmm_free_page((void *)physical);
+
+    vga_puts("\n");
+}
+
 
 /* ---------------------------------------------------------------------------
  * Shell process
@@ -186,13 +244,26 @@ static void shell_run(void) {
         if (k_strcmp(cmd, "help")  == 0) { cmd_help();  continue; }
         if (k_strcmp(cmd, "clear") == 0) { cmd_clear(); continue; }
         if (k_strcmp(cmd, "about") == 0) { cmd_about(); continue; }
-        if (k_strcmp(cmd, "mem")   == 0) { cmd_mem();   continue; }
+        if (k_strcmp(cmd, "mem")   == 0) {
+           cmd_mem();
+           continue;
+        }
+
+        if (k_strcmp(cmd, "memtest") == 0) {
+        cmd_memtest();
+        continue;
+        }
+        
+        if (k_strcmp(cmd, "vmmtest") == 0) {
+        cmd_vmmtest();
+        continue;
+        }
 
         if (k_strcmp(cmd, "ps") == 0) {
             process_list();
             continue;
         }
-        
+ 
         if (k_strcmp(cmd, "threads") == 0) {
         thread_list();
         continue;
@@ -284,7 +355,7 @@ void kernel_main(void) {
 
     process_init();
     scheduler_init();
-    
+        
     process_create(test_process_1);
     process_create(test_process_2); 
 
@@ -292,6 +363,9 @@ void kernel_main(void) {
     mutex_init(&test_mutex);
     semaphore_init(&test_semaphore, 1);
     
+    pmm_init();
+    vmm_init();    
+
     thread_create(test_thread_1);
     thread_create(test_thread_2);
 

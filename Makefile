@@ -57,8 +57,9 @@ KERNEL_C_SRCS  := kernel/kernel.c \
                    kernel/scheduler.c \
                    kernel/thread.c \
                    kernel/mutex.c \
-                   kernel/semaphore.c
-                   
+                   kernel/semaphore.c \
+                   kernel/pmm.c \
+                   kernel/vmm.c
 
 # Add your new source files below as the course progresses:
 # Lecture 09: kernel/process.c kernel/scheduler.c
@@ -75,7 +76,6 @@ OS_IMAGE       := seng21213-os.img
 # Default target
 # ---------------------------------------------------------------------------
 .PHONY: all clean run run-debug info
-
 all: $(OS_IMAGE)
 	@echo ""
 	@echo "  ✓  Build successful → $(OS_IMAGE)"
